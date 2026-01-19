@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nextgen Udaan - Access</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="nextlogo.png">
+    <link href="https://unpkg.com/feather-icons/dist/feather.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Login Page -->
+    <div id="login-page" class="login-container">
+        <!-- Left Side: Brand & Visual -->
+        <div class="login-visual">
+            <div class="login-visual-content">
+                <div class="brand-section">
+                    <div class="brand-logo">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="48" height="48" rx="12" fill="url(#gradient-logo)" />
+                            <path d="M24 10L32 18H16L24 10Z" fill="white" opacity="0.9" />
+                            <path d="M16 18H32V30C32 31.1 31.1 32 30 32H18C16.9 32 16 31.1 16 30V18Z" fill="white"
+                                opacity="0.7" />
+                            <circle cx="24" cy="24" r="4" fill="url(#gradient-logo)" />
+                            <defs>
+                                <linearGradient id="gradient-logo" x1="0" y1="0" x2="48" y2="48">
+                                    <stop offset="0%" style="stop-color:#32B8C6" />
+                                    <stop offset="100%" style="stop-color:#1A6873" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h1 class="brand-title">NextGen Udaan</h1>
+                    <p class="brand-subtitle">User Access Management</p>
+                </div>
+
+                <div class="visual-features">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i data-feather="users"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>User Management</h3>
+                            <p>Create and manage user accounts efficiently</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i data-feather="shield"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Role-Based Access</h3>
+                            <p>Granular permission control for every module</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i data-feather="lock"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Secure Authentication</h3>
+                            <p>Firebase-powered security for your data</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div class="login-form-container">
+            <div class="login-form-wrapper">
+                <div class="login-form-header">
+                    <h2>Welcome back</h2>
+                    <p>Enter your credentials to access the admin panel</p>
+                </div>
+
+                <div class="login-msg">
+                    <div style="text-align: center; padding: 20px;">
+                        <i data-feather="unlock" style="width: 48px; height: 48px; color: var(--color-primary);"></i>
+                        <h3>Welcome Super Admin</h3>
+                        <p>Access Control System<br>NextGen Udaan</p>
+                    </div>
+                </div>
+
+                <div class="login-footer">
+                    <p class="powered-by">Powered by NextGen Udaan Platform</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <i data-feather="menu"></i>
+                </button>
+                <h2 class="page-title">User Management</h2>
+            </div>
+            <div class="header-right">
+                <div class="user-profile">
+                    <div class="user-avatar">
+                        <i data-feather="user"></i>
+                    </div>
+                    <span class="user-name">Loading...</span>
+                </div>
+                <button id="logout-btn" class="btn btn--secondary btn--sm">
+                    <i data-feather="log-out"></i>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-logo">
+                <h3>Access Control</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="users">
+                    <i data-feather="users"></i>
+                    <span>User Management</span>
+                </a>
+                <a href="#" class="nav-item" data-page="roles">
+                    <i data-feather="shield"></i>
+                    <span>Role & Permissions</span>
+                </a>
+                <a href="#" class="nav-item" data-page="emails">
+                    <i data-feather="mail"></i>
+                    <span>Email Management</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- User Management Page -->
+            <div id="users-page" class="page active">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <i data-feather="users" class="page-icon"></i>
+                        <h2>User</h2>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="user-designation-filter" class="form-control" style="width: 150px; font-size: 13px;">
+                            <option value="">All Designations</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Team Leader">Team Leader</option>
+                            <option value="Member">Member</option>
+                        </select>
+                        <button id="export-users-btn" class="btn btn--success">
+                            <i data-feather="download"></i> Export
+                        </button>
+                        <button id="add-user-btn" class="btn btn--primary">
+                            <i data-feather="plus"></i> Add User
+                        </button>
+                        <div class="search-box">
+                            <i data-feather="search"></i>
+                            <input type="text" id="user-search" placeholder="Search..." class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Status Tabs -->
+                <div class="status-tabs">
+                    <button class="status-tab active" data-status="active">
+                        <span class="tab-indicator active-indicator"></span>
+                        Active User
+                    </button>
+                    <button class="status-tab" data-status="inactive">
+                        <span class="tab-indicator inactive-indicator"></span>
+                        Inactive User
+                    </button>
+                </div>
+
+                <!-- Users Table -->
+                <div class="table-container">
+                    <table class="data-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>User Name</th>
+                                <th>Designation</th>
+                                <th>Mobile</th>
+                                <th>Email</th>
+                                <th>User Role</th>
+                                <th>CRM</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <!-- Users populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="refresh-users-btn" class="btn btn--secondary">
+                        <i data-feather="refresh-cw"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Role & Permissions Page -->
+            <div id="roles-page" class="page">
+                <div class="role-permissions-layout">
+                    <!-- Left Panel: Role List -->
+                    <div class="role-panel">
+                        <div class="panel-header">
+                            <i data-feather="shield" class="panel-icon"></i>
+                            <h3>User Role</h3>
+                        </div>
+                        <div class="role-table-container">
+                            <table class="role-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sr#</th>
+                                        <th>User Role Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roles-tbody">
+                                    <!-- Roles populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="role-actions">
+                            <button id="add-role-btn" class="btn btn--primary btn--sm">Add</button>
+                            <button id="edit-role-btn" class="btn btn--secondary btn--sm">Edit</button>
+                            <button id="delete-role-btn" class="btn btn--error btn--sm">Delete</button>
+                            <button id="close-role-btn" class="btn btn--secondary btn--sm">Close</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Capabilities List -->
+                    <div class="capabilities-panel">
+                        <div class="panel-header">
+                            <i data-feather="check-square" class="panel-icon"></i>
+                            <h3>Select Role and Change Capabilities List</h3>
+                        </div>
+                        <div class="capabilities-table-container">
+                            <table class="capabilities-table">
+                                <thead>
+                                    <tr>
+                                        <th class="menu-col">Menus</th>
+                                        <th class="perm-col"><input type="checkbox" id="check-all-add"> Add</th>
+                                        <th class="perm-col"><input type="checkbox" id="check-all-edit"> Edit</th>
+                                        <th class="perm-col"><input type="checkbox" id="check-all-delete"> Delete</th>
+                                        <th class="perm-col"><input type="checkbox" id="check-all-view"> View</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="capabilities-tbody">
+                                    <!-- Capabilities populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="capabilities-actions">
+                            <button id="update-capabilities-btn" class="btn btn--primary">
+                                <i data-feather="save"></i> Update
+                            </button>
+                            <button id="export-excel-btn" class="btn btn--success">
+                                <i data-feather="download"></i> Export to Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Management Page -->
+            <div id="emails-page" class="page">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <i data-feather="mail" class="page-icon"></i>
+                        <h2>Email Credentials</h2>
+                    </div>
+                    <div class="page-header-right">
+                        <div class="search-box">
+                            <i data-feather="search"></i>
+                            <input type="text" id="email-search" placeholder="Search..." class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emails Table -->
+                <div class="table-container">
+                    <table class="data-table" id="emails-table">
+                        <thead>
+                            <tr>
+                                <th>Email Address</th>
+                                <th>Password</th>
+                                <th>Purpose</th>
+                                <th>Assigned To</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="emails-tbody">
+                            <!-- Emails populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="add-email-btn" class="btn btn--primary">
+                        <i data-feather="plus"></i> Add Email
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="header-icon">
+                    <i data-feather="user-plus"></i>
+                </div>
+                <div class="header-text">
+                    <h3 id="user-modal-title">Add New User</h3>
+                    <p>Fill in the user details below</p>
+                </div>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="user-form" class="modal-body">
+                <input type="hidden" name="user-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Distributor ID</label>
+                        <input type="text" name="empCode" class="form-control" placeholder="e.g. DIST001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="username" class="form-control" placeholder="e.g. John Doe" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Father's Name *</label>
+                        <input type="text" name="fatherName" class="form-control" placeholder="Father's Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth *</label>
+                        <input type="date" name="dob" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" placeholder="john@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mobile Number *</label>
+                        <input type="tel" name="mobile" class="form-control" placeholder="+91 9876543210" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Location *</label>
+                        <input type="text" name="location" class="form-control" placeholder="City/Region" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Joining *</label>
+                        <input type="date" name="doj" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Designation *</label>
+                        <select name="designation" class="form-control" required>
+                            <option value="">Select Designation</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Team Leader">Team Leader</option>
+                            <option value="Member">Member</option>
+                        </select>
+                    </div>
+                     <div class="form-group">
+                        <label class="form-label">User Role (Access) *</label>
+                        <select name="role" class="form-control" required>
+                            <option value="">Select Role</option>
+                            <!-- Roles populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Password *</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                     <div class="form-group">
+                        <label class="form-label">Date of Leaving</label>
+                        <input type="date" name="dol" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="hasCRMAccess">
+                        <span>CRM Access</span>
+                    </label>
+                </div>
+                <div id="role-permissions-preview" class="permissions-preview-container">
+                    <!-- Role permissions will be loaded here -->
+                    <p class="info-text">No custom permissions defined for User</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary modal-close-btn">Cancel</button>
+                    <button type="submit" class="btn btn--primary">
+                        <i data-feather="check"></i> Save User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Role Modal -->
+    <div id="role-modal" class="modal hidden">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <div class="header-icon">
+                    <i data-feather="shield"></i>
+                </div>
+                <div class="header-text">
+                    <h3 id="role-modal-title">Add New Role</h3>
+                    <p>Enter the role name</p>
+                </div>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="role-form" class="modal-body">
+                <input type="hidden" name="role-id">
+                <div class="form-group">
+                    <label class="form-label">Role Name *</label>
+                    <input type="text" name="roleName" class="form-control" placeholder="e.g. Manager" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary modal-close-btn">Cancel</button>
+                    <button type="submit" class="btn btn--primary">
+                        <i data-feather="check"></i> Save Role
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Email Modal -->
+    <div id="email-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="header-icon">
+                    <i data-feather="mail"></i>
+                </div>
+                <div class="header-text">
+                    <h3 id="email-modal-title">Add Email Credentials</h3>
+                    <p>Store email login details securely</p>
+                </div>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="email-form" class="modal-body">
+                <input type="hidden" name="email-id">
+                <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" name="emailAddress" class="form-control" placeholder="account@example.com"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password *</label>
+                    <input type="text" name="emailPassword" class="form-control" placeholder="Enter password" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Purpose</label>
+                        <select name="purpose" class="form-control">
+                            <option value="General">General</option>
+
+                            <option value="CRM">CRM</option>
+                            <option value="Support">Support</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Assigned To</label>
+                        <select name="assignedTo" class="form-control">
+                            <option value="">Unassigned</option>
+                            <!-- Users populated by JS -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="3"
+                        placeholder="Any additional notes..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary modal-close-btn">Cancel</button>
+                    <button type="submit" class="btn btn--primary">
+                        <i data-feather="check"></i> Save Credentials
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <i data-feather="check-circle" class="toast-icon"></i>
+            <span class="toast-message">Success!</span>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="app.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+</body>
+
+</html>

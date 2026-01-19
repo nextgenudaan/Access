@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        // Standard check: Role is 'Admin'
+        get(/databases/$(database)/documents/userAccess/$(request.auth.uid)).data.role == 'Admin' 
+        ||
+        // Bootstrap check: Hardcoded Admin Email
+        request.auth.token.email == 'nextgenudaan@gmail.com'
+      );
+    }
+
+    // --- CRM / Legacy Collections ---
+    // Employees (HRMS Users) 
+    // READ: Open to everyone (Required for Unauthenticated Access App)
+    // WRITE: Authenticated users only (HRMS App)
+    match /employees/{employeeId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    // --- HRMS & ACCESS MANAGEMENT ---
+    // User Access (Roles & Permissions) - OPEN ACCESS (Admin Only App)
+    match /userAccess/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Access Roles (Definitions) - OPEN ACCESS (Admin Only App)
+    match /accessRoles/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Email Credentials (Shared Accounts) - OPEN ACCESS (Admin Only App)
+    match /emailCredentials/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // --- CRM / Legacy Collections ---
+    // Unblocking existing apps by allowing authenticated access
+    
+    match /prospects/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /activities/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /users/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /joinRequests/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
