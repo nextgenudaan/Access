@@ -642,21 +642,49 @@ class AccessControlApp {
 
         // Feature: Create Auth User if password is provided
         if (password && password.length >= 6) {
+            // Ensure secondary auth is initialized
+            if (!this.secondaryAuth) {
+                try {
+                    const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+                    this.secondaryAuth = getAuth(secondaryApp);
+                    console.log('Secondary auth initialized during user creation');
+                } catch (e) {
+                    console.error('Failed to initialize secondary auth:', e);
+                    this.showToast('Warning: Could not create auth account', 'warning');
+                }
+            }
+
             if (this.secondaryAuth) {
                 try {
-                    await createUserWithEmailAndPassword(this.secondaryAuth, email, password);
-                    this.showToast('Authentication Account Created!', 'success');
+                    console.log(`Creating Firebase Auth account for: ${email}`);
+                    const userCredential = await createUserWithEmailAndPassword(this.secondaryAuth, email, password);
+                    console.log('Firebase Auth account created successfully!', userCredential.user.uid);
+                    this.showToast('✅ Firebase Auth Account Created!', 'success');
+                    
+                    // Sign out from secondary auth to avoid conflicts
+                    await signOut(this.secondaryAuth);
                 } catch (err) {
+                    console.error("Firebase Auth Creation Error:", err);
                     if (err.code === 'auth/email-already-in-use') {
-                        this.showToast('Auth user already exists.', 'info');
+                        console.log('Auth user already exists - this is OK');
+                        this.showToast('Auth account already exists (OK)', 'info');
+                    } else if (err.code === 'auth/invalid-email') {
+                        this.showToast('Invalid email format', 'error');
+                        console.error('Invalid email:', email);
+                    } else if (err.code === 'auth/weak-password') {
+                        this.showToast('Password too weak (min 6 characters)', 'error');
                     } else {
-                        console.error("Auth Creation Error:", err);
                         this.showToast('Auth Error: ' + err.message, 'error');
                     }
+                    // Don't block user creation if auth fails
                 }
             } else {
-                console.warn("Secondary Auth not initialized.");
+                console.warn("Secondary Auth not available - skipping Firebase Auth creation");
+                this.showToast('Warning: Firebase Auth account not created', 'warning');
             }
+        } else if (password && password.length < 6) {
+            this.showToast('Password must be at least 6 characters', 'error');
+            return; // Don't proceed with user creation
         }
 
         try {
