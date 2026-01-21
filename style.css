@@ -1444,3 +1444,66 @@ select.form-control {
     text-align: center;
     font-style: italic;
 }
+
+/* Email Management Enhancements */
+.email-cell,
+.password-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    min-width: 150px;
+}
+
+.password-display {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 600;
+    color: var(--color-text);
+    background: rgba(0,0,0,0.05);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+}
+
+.password-actions {
+    display: flex;
+    gap: var(--space-4);
+}
+
+.icon-btn-secondary {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-fast);
+}
+
+.icon-btn-secondary:hover {
+    background: var(--color-secondary);
+    color: var(--color-primary);
+}
+
+.icon-btn-secondary svg {
+    width: 14px;
+    height: 14px;
+}
+
+.role-badge {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge--crm { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.badge--support { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+.badge--marketing { background: rgba(234, 179, 8, 0.1); color: #ca8a04; }
+.badge--admin { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.badge--general { background: rgba(107, 114, 128, 0.1); color: #6b7280; }

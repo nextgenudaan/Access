@@ -8,54 +8,64 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && (
-        // Standard check: Role is 'Admin'
-        get(/databases/$(database)/documents/userAccess/$(request.auth.uid)).data.role == 'Admin' 
-        ||
-        // Bootstrap check: Hardcoded Admin Email
-        request.auth.token.email == 'nextgenudaan@gmail.com'
-      );
+      let isSuperAdmin = request.auth.token.email == 'nextgenudaan@gmail.com';
+      let hasAdminRole = exists(/databases/$(database)/documents/userAccess/$(request.auth.uid)) && 
+                         get(/databases/$(database)/documents/userAccess/$(request.auth.uid)).data.role == 'Admin';
+      return isAuthenticated() && (isSuperAdmin || hasAdminRole);
     }
 
-    // --- CRM / Legacy Collections ---
+    // GLOBAL ADMIN BYPASS
+    // This unblocks the super admin for ALL collections immediately
+    match /{allPaths=**} {
+      allow read, write: if isAuthenticated() && request.auth.token.email == 'nextgenudaan@gmail.com';
+    }
+
+    // --- HRMS & ACCESS MANAGEMENT ---
+    
     // Employees (HRMS Users) 
-    // READ: Open to everyone (Required for Unauthenticated Access App)
-    // WRITE: Authenticated users only (HRMS App)
     match /employees/{employeeId} {
       allow read: if true;
-      allow write: if isAuthenticated();
-    }
-    // --- HRMS & ACCESS MANAGEMENT ---
-    // User Access (Roles & Permissions) - OPEN ACCESS (Admin Only App)
-    match /userAccess/{document=**} {
-      allow read, write: if true;
-    }
-    
-    // Access Roles (Definitions) - OPEN ACCESS (Admin Only App)
-    match /accessRoles/{document=**} {
-      allow read, write: if true;
+      allow write: if isAdmin();
     }
 
-    // Email Credentials (Shared Accounts) - OPEN ACCESS (Admin Only App)
-    match /emailCredentials/{document=**} {
-      allow read, write: if true;
+    // User Access (Roles & Permissions)
+    match /userAccess/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
     
-    // --- CRM / Legacy Collections ---
-    // Unblocking existing apps by allowing authenticated access
+    // Access Roles (Definitions)
+    match /accessRoles/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Email Credentials (Shared Accounts)
+    match /emailCredentials/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // --- CRM COLLECTIONS ---
     
     match /prospects/{document=**} {
       allow read, write: if isAuthenticated();
     }
     
-    match /activities/{document=**} {
+    match /teams/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /whatsappTemplates/{document=**} {
       allow read, write: if isAuthenticated();
     }
     
+    // System Users
     match /users/{document=**} {
       allow read, write: if isAuthenticated();
     }
     
+    // Leads / Join Requests
     match /joinRequests/{document=**} {
       allow read, write: if isAuthenticated();
     }

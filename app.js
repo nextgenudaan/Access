@@ -63,6 +63,7 @@ class AccessControlApp {
         this.currentUserFilter = 'active';
         this.currentDesignationFilter = '';
         this.menuStructure = defaultMenuStructure;
+        this.passwordVisibility = new Set();
         this.init();
     }
 
@@ -155,6 +156,7 @@ class AccessControlApp {
         this.emailModal = document.getElementById('email-modal');
         this.emailForm = document.getElementById('email-form');
         this.emailModalTitle = document.getElementById('email-modal-title');
+        this.emailSearch = document.getElementById('email-search');
 
         // Toast
         this.toast = document.getElementById('toast');
@@ -219,6 +221,7 @@ class AccessControlApp {
         // Email Management
         this.addEmailBtn?.addEventListener('click', () => this.openEmailModal());
         this.emailForm?.addEventListener('submit', (e) => this.handleEmailSubmit(e));
+        this.emailSearch?.addEventListener('input', (e) => this.renderEmailsTable(e.target.value));
 
         // Modal close buttons
         document.querySelectorAll('.modal-close, .modal-close-btn').forEach(btn => {
@@ -233,19 +236,29 @@ class AccessControlApp {
         });
     }
 
-    // ==================== AUTHENTICATION ====================
     initializeAuth() {
-        // ONE CLICK ACCESS: Bypass standard Auth
-        // Mock the Admin User since Rules are now Open
-        this.currentUser = {
-            email: 'nextgenudaan@gmail.com',
-            uid: 'admin-bypass',
-            displayName: 'Super Admin'
-        };
-
-        // Show App Immediately
-        this.showApp();
-        this.loadData();
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                this.currentUser = user;
+                this.showApp();
+                this.loadData();
+            } else {
+                this.showLogin();
+                // HARDCODED AUTO-LOGIN: Attempt login with specific credentials once
+                if (!this._attemptedAutoLogin) {
+                    this._attemptedAutoLogin = true;
+                    console.log("Attempting hardcoded auto-login...");
+                    signInWithEmailAndPassword(auth, "nextgenudaan@gmail.com", "Anchan@4746")
+                        .then(() => {
+                            console.log("Auto-login success!");
+                            this.showToast('Auto-login successful!', 'success');
+                        })
+                        .catch(err => {
+                            console.error("Auto-login failed:", err);
+                        });
+                }
+            }
+        });
 
         // Initialize Secondary App for User Creation (still needed for creating other users)
         try {
@@ -304,8 +317,9 @@ class AccessControlApp {
 
     // ==================== DATA LOADING ====================
     async loadData() {
+        // Load users first to avoid race condition in email assignment rendering
+        await this.loadUsers();
         await Promise.all([
-            this.loadUsers(),
             this.loadRoles(),
             this.loadEmails()
         ]);
@@ -1200,44 +1214,92 @@ class AccessControlApp {
     }
 
     // ==================== EMAIL MANAGEMENT ====================
-    renderEmailsTable() {
+    renderEmailsTable(searchTerm = '') {
         if (!this.emailsTbody) return;
 
-        if (this.emails.length === 0) {
+        let filteredEmails = this.emails;
+        if (searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+            filteredEmails = this.emails.filter(email => 
+                (email.emailAddress || '').toLowerCase().includes(searchTerm) ||
+                (email.purpose || '').toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (filteredEmails.length === 0) {
             this.emailsTbody.innerHTML = `
                 <tr>
                     <td colspan="5" style="text-align: center; padding: 40px; color: var(--color-text-secondary);">
-                        No email credentials stored
+                        ${searchTerm ? 'No matching email credentials found' : 'No email credentials stored'}
                     </td>
                 </tr>
             `;
             return;
         }
 
-        this.emailsTbody.innerHTML = this.emails.map(email => {
+        this.emailsTbody.innerHTML = filteredEmails.map(email => {
             const assignedUser = this.users.find(u => u.id === email.assignedTo);
+            const isPasswordVisible = this.passwordVisibility.has(email.id);
+            
             return `
                 <tr data-id="${email.id}">
-                    <td>${this.escapeHtml(email.emailAddress || '')}</td>
-                    <td><span class="password-display">••••••••</span></td>
-                    <td><span class="role-badge">${this.escapeHtml(email.purpose || 'General')}</span></td>
+                    <td>
+                        <div class="email-cell">
+                            <span>${this.escapeHtml(email.emailAddress || '')}</span>
+                            <button class="icon-btn-secondary" onclick="app.copyToClipboard('${email.emailAddress}', 'Email')" title="Copy Email">
+                                <i data-feather="copy"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="password-cell">
+                            <span class="password-display">${isPasswordVisible ? this.escapeHtml(email.password || '') : '••••••••'}</span>
+                            <div class="password-actions">
+                                <button class="icon-btn-secondary" onclick="app.togglePasswordVisibility('${email.id}')" title="${isPasswordVisible ? 'Hide' : 'Show'} Password">
+                                    <i data-feather="${isPasswordVisible ? 'eye-off' : 'eye'}"></i>
+                                </button>
+                                <button class="icon-btn-secondary" onclick="app.copyToClipboard('${email.password}', 'Password')" title="Copy Password">
+                                    <i data-feather="copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="role-badge badge--${(email.purpose || 'General').toLowerCase()}">${this.escapeHtml(email.purpose || 'General')}</span></td>
                     <td>${assignedUser ? this.escapeHtml(assignedUser.fullName || assignedUser.email) : '<em>Unassigned</em>'}</td>
                     <td>
                         <div class="table-actions">
                             <button class="action-btn edit" onclick="app.editEmail('${email.id}')" title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-                            <button class="action-btn view" onclick="app.viewEmailCredentials('${email.id}')" title="View Credentials">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <i data-feather="edit-2"></i>
                             </button>
                             <button class="action-btn delete" onclick="app.deleteEmail('${email.id}')" title="Delete">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                <i data-feather="trash-2"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
             `;
         }).join('');
+
+        if (typeof feather !== 'undefined') feather.replace();
+    }
+
+    togglePasswordVisibility(emailId) {
+        if (this.passwordVisibility.has(emailId)) {
+            this.passwordVisibility.delete(emailId);
+        } else {
+            this.passwordVisibility.add(emailId);
+        }
+        this.renderEmailsTable(this.emailSearch?.value || '');
+    }
+
+    async copyToClipboard(text, label = 'Content') {
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast(`${label} copied to clipboard!`, 'success');
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+            this.showToast('Failed to copy to clipboard', 'error');
+        }
     }
 
     openEmailModal(emailId = null) {
