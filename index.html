@@ -388,12 +388,24 @@
                             <!-- Roles populated by JS -->
                         </select>
                     </div>
+                     <div class="form-group">
+                        <label class="form-label">Assigned Team</label>
+                        <select name="teamId" class="form-control">
+                            <option value="">No Team Assigned</option>
+                            <!-- Teams populated by JS -->
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Password *</label>
-                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        <div class="input-with-icon">
+                            <input type="password" id="user-password" name="password" class="form-control" placeholder="••••••••" required>
+                            <button type="button" id="toggle-password" class="toggle-password-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--color-text-secondary);">
+                                <i data-feather="eye"></i>
+                            </button>
+                        </div>
                     </div>
                      <div class="form-group">
                         <label class="form-label">Date of Leaving</label>

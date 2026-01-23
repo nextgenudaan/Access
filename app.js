@@ -58,6 +58,7 @@ class AccessControlApp {
         this.users = [];
         this.roles = [];
         this.emails = [];
+        this.teams = [];
         this.currentUser = null;
         this.selectedRole = null;
         this.currentUserFilter = 'active';
@@ -228,6 +229,23 @@ class AccessControlApp {
             btn.addEventListener('click', () => this.closeAllModals());
         });
 
+        // Password visibility toggle
+        const togglePasswordBtn = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('user-password');
+        if (togglePasswordBtn && passwordInput) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Update icon
+                const icon = togglePasswordBtn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-feather', type === 'password' ? 'eye' : 'eye-off');
+                    if (typeof feather !== 'undefined') feather.replace();
+                }
+            });
+        }
+
         // Close modal on backdrop click
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
@@ -260,12 +278,24 @@ class AccessControlApp {
             }
         });
 
-        // Initialize Secondary App for User Creation (still needed for creating other users)
+        // Initialize Secondary App for User Creation
+        this.setupSecondaryAuth();
+    }
+
+    setupSecondaryAuth() {
+        if (this.secondaryAuth) return;
         try {
+            // Check if app already exists to avoid errors on hot reload if applicable
             const secondaryApp = initializeApp(firebaseConfig, "Secondary");
             this.secondaryAuth = getAuth(secondaryApp);
         } catch (e) {
-            console.warn("Secondary app might already be initialized:", e);
+            console.warn("Secondary app initialization warning:", e.message);
+            // If it failed because it exists, we can try to get it
+            try {
+                this.secondaryAuth = getAuth(); // Fallback or handle appropriately
+            } catch (innerError) {
+                console.error("Could not recover secondary auth:", innerError);
+            }
         }
     }
 
@@ -321,7 +351,8 @@ class AccessControlApp {
         await this.loadUsers();
         await Promise.all([
             this.loadRoles(),
-            this.loadEmails()
+            this.loadEmails(),
+            this.loadTeams()
         ]);
         this.renderCapabilitiesTable();
     }
@@ -402,6 +433,34 @@ class AccessControlApp {
         } catch (error) {
             console.error('Error loading emails:', error);
         }
+    }
+
+    async loadTeams() {
+        try {
+            const querySnapshot = await getDocs(collection(db, 'teams'));
+            this.teams = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.populateTeamDropdown();
+        } catch (error) {
+            console.error('Error loading teams:', error);
+        }
+    }
+
+    populateTeamDropdown() {
+        const teamSelect = this.userForm.querySelector('[name="teamId"]');
+        if (!teamSelect) return;
+
+        // Keep the first option (No Team Assigned)
+        teamSelect.innerHTML = '<option value="">No Team Assigned</option>';
+
+        this.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            teamSelect.appendChild(option);
+        });
     }
 
     // ==================== NAVIGATION ====================
@@ -578,6 +637,13 @@ class AccessControlApp {
             this.userForm.querySelector('[name="role"]').value = user.role || 'User';
 
             this.userForm.querySelector('[name="hasCRMAccess"]').checked = user.hasCRMAccess || false;
+            
+            // Set Team
+            const teamSelect = this.userForm.querySelector('[name="teamId"]');
+            if (teamSelect) {
+                 if (this.teams.length === 0) this.populateTeamDropdown(); // Ensure populated
+                 teamSelect.value = user.teamId || '';
+            }
 
             // Fetch and show permissions for the selected role
             this.fetchRolePermissions(user.role || 'User');
@@ -650,23 +716,32 @@ class AccessControlApp {
 
         const formData = new FormData(this.userForm);
         let userId = formData.get('user-id');
-        const email = formData.get('email');
-        const password = formData.get('password');
-        const username = formData.get('username');
+        const email = formData.get('email')?.trim().toLowerCase();
+        const password = formData.get('password')?.trim(); // Trim password to avoid accidental whitespace
+        const username = formData.get('username')?.trim();
 
-        // Feature: Create Auth User if password is provided
-        if (password && password.length >= 6) {
-            // Ensure secondary auth is initialized
-            if (!this.secondaryAuth) {
-                try {
-                    const secondaryApp = initializeApp(firebaseConfig, "Secondary");
-                    this.secondaryAuth = getAuth(secondaryApp);
-                    console.log('Secondary auth initialized during user creation');
-                } catch (e) {
-                    console.error('Failed to initialize secondary auth:', e);
-                    this.showToast('Warning: Could not create auth account', 'warning');
+        if (!email || !username) {
+            this.showToast('Email and Name are required', 'error');
+            return;
+        }
+
+        // 0. Check for duplicate email in Firestore (if creating new user)
+        if (!userId) {
+            try {
+                const q = query(collection(db, 'employees'), where('email', '==', email));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    this.showToast(`User with email ${email} already exists!`, 'error');
+                    return;
                 }
+            } catch (err) {
+                console.error("Error checking for existing user:", err);
             }
+        }
+
+        // 1. Create Firebase Auth account if password provided
+        if (password && password.length >= 6) {
+            this.setupSecondaryAuth();
 
             if (this.secondaryAuth) {
                 try {
@@ -675,53 +750,49 @@ class AccessControlApp {
                     console.log('Firebase Auth account created successfully!', userCredential.user.uid);
                     this.showToast('✅ Firebase Auth Account Created!', 'success');
                     
-                    // Sign out from secondary auth to avoid conflicts
+                    // Immediately sign out to avoid session issues
                     await signOut(this.secondaryAuth);
                 } catch (err) {
                     console.error("Firebase Auth Creation Error:", err);
                     if (err.code === 'auth/email-already-in-use') {
-                        console.log('Auth user already exists - this is OK');
-                        this.showToast('Auth account already exists (OK)', 'info');
+                        console.log('Auth user already exists');
+                        this.showToast('Note: Auth account already exists. Password NOT updated.', 'info');
                     } else if (err.code === 'auth/invalid-email') {
                         this.showToast('Invalid email format', 'error');
-                        console.error('Invalid email:', email);
+                        return;
                     } else if (err.code === 'auth/weak-password') {
-                        this.showToast('Password too weak (min 6 characters)', 'error');
+                        this.showToast('Password too weak (min 6 chars)', 'error');
+                        return;
                     } else {
                         this.showToast('Auth Error: ' + err.message, 'error');
+                        // Continue anyway for Firestore records if it wasn't a blocking error
                     }
-                    // Don't block user creation if auth fails
                 }
-            } else {
-                console.warn("Secondary Auth not available - skipping Firebase Auth creation");
-                this.showToast('Warning: Firebase Auth account not created', 'warning');
             }
         } else if (password && password.length < 6) {
             this.showToast('Password must be at least 6 characters', 'error');
-            return; // Don't proceed with user creation
+            return;
         }
 
+        // 2. Save Employee Record
         try {
             const dol = formData.get('dol');
             let status = 'Active';
             let hasCRMAccess = formData.get('hasCRMAccess') === 'on';
 
-            // Auto-revoke access if leaving date is set
             if (dol) {
                 status = 'Inactive';
                 hasCRMAccess = false;
-                // Toast to inform user of auto-action
-                // this.showToast('User deactivated due to Leaving Date', 'info'); 
             }
 
             const employeeData = {
                 fullName: username,
                 email: email,
-                empCode: formData.get('empCode'),
-                fatherName: formData.get('fatherName'),
+                empCode: formData.get('empCode')?.trim(),
+                fatherName: formData.get('fatherName')?.trim(),
                 dob: formData.get('dob'),
-                mobile: formData.get('mobile'),
-                location: formData.get('location'),
+                mobile: formData.get('mobile')?.trim(),
+                location: formData.get('location')?.trim(),
                 doj: formData.get('doj'),
                 designation: formData.get('designation'),
                 dol: dol,
@@ -729,51 +800,46 @@ class AccessControlApp {
                 updatedAt: serverTimestamp()
             };
 
-            // If new user (no userId), create Employee record first
             if (!userId) {
                 employeeData.createdAt = serverTimestamp();
                 const empRef = await addDoc(collection(db, 'employees'), employeeData);
-                userId = empRef.id; // Use the new employee ID
-                this.showToast('Employee record created!', 'success');
+                userId = empRef.id;
             } else {
-                // Update existing employee details
                 await updateDoc(doc(db, 'employees', userId), employeeData);
             }
 
+            // 3. Save User Access Record
             const accessData = {
                 employeeId: userId,
                 role: formData.get('role'),
                 hasCRMAccess: hasCRMAccess,
+                teamId: formData.get('teamId') || null,
                 updatedAt: serverTimestamp()
             };
 
             const user = this.users.find(u => u.id === userId);
 
             if (user?.accessId) {
-                // Update existing access record
                 await updateDoc(doc(db, 'userAccess', user.accessId), accessData);
-                this.showToast('User access updated successfully!', 'success');
-            } else { // Handle case where user exists but access record doesn't, OR we just created the user
-                // Check if access record exists (double check)
+                this.showToast('User updated successfully!', 'success');
+            } else {
                 const q = query(collection(db, 'userAccess'), where('employeeId', '==', userId));
                 const querySnapshot = await getDocs(q);
                 
                 if (!querySnapshot.empty) {
-                     const accessId = querySnapshot.docs[0].id;
-                     await updateDoc(doc(db, 'userAccess', accessId), accessData);
+                    await updateDoc(doc(db, 'userAccess', querySnapshot.docs[0].id), accessData);
                 } else {
-                    // Create new access record
                     accessData.createdAt = serverTimestamp();
                     await addDoc(collection(db, 'userAccess'), accessData);
                 }
-                this.showToast('User permissions assigned!', 'success');
+                this.showToast('Permissions assigned!', 'success');
             }
 
             this.closeAllModals();
             await this.loadUsers();
         } catch (error) {
-            console.error('Error saving user access:', error);
-            this.showToast('Error saving user access: ' + error.message, 'error');
+            console.error('Error saving records:', error);
+            this.showToast('Error: ' + error.message, 'error');
         }
     }
 
